@@ -1,19 +1,32 @@
+using Gateway.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    private readonly IUserRepository _userRepository;
+
+    public AuthController(IUserRepository userRepository)
+    {
+        _userRepository = userRepository;
+    }
+
     [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginModel login)
+    public async Task<IActionResult> Login([FromBody] LoginModel login)
     {
         // Replace this with your user validation
-        if (login.Username != "testuser" || login.Password != "password")
-            return Unauthorized();
+
+        var user = await _userRepository.GetByUsernameAsync(login.Username);
+
+        if (user == null || !await _userRepository.VerifyPasswordAsync(user, request.Password))
+            return Unauthorized("Invalid username or password");
+
 
         var claims = new[]
         {
